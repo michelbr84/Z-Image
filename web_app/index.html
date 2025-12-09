@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="index.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <div class="glass-container">
         <header>
@@ -16,7 +18,25 @@
 
         <main>
             <div class="input-section">
-                <textarea id="promptInput" placeholder="Describe your imagination... (e.g., A cyberpunk city in rain, neon lights, 8k resolution)"></textarea>
+                <textarea id="promptInput"
+                    placeholder="Describe your imagination... (e.g., A cyberpunk city in rain, neon lights, 8k resolution)"></textarea>
+
+                <div class="upload-section">
+                    <input type="file" id="imageInput" accept="image/*" style="display: none">
+                    <button id="uploadBtn" class="secondary-btn">
+                        <span class="icon">📷</span> Upload Reference Image
+                    </button>
+                    <div id="imagePreviewContainer" class="image-preview" style="display: none">
+                        <img id="imagePreview" src="" alt="Reference">
+                        <button id="clearImageBtn" class="close-btn">×</button>
+                    </div>
+                </div>
+
+                <div class="settings-section" id="settingsSection" style="display: none">
+                    <label for="strengthSlider">Instruction Strength: <span id="strengthValue">0.8</span></label>
+                    <input type="range" id="strengthSlider" min="0.1" max="1.0" step="0.05" value="0.8">
+                </div>
+
                 <div class="controls">
                     <button id="generateBtn">
                         <span class="btn-text">Generate Art</span>
@@ -36,4 +56,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>

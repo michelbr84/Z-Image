@@ -5,6 +5,8 @@ from typing import List, Optional, Union
 
 from loguru import logger
 import torch
+import numpy as np
+import PIL.Image
 
 from config import (
     BASE_IMAGE_SEQ_LEN,
@@ -82,6 +84,8 @@ def generate(
     cfg_truncation: float = DEFAULT_CFG_TRUNCATION,
     max_sequence_length: int = DEFAULT_MAX_SEQUENCE_LENGTH,
     output_type: str = "pil",
+    image: Optional[PIL.Image.Image] = None,
+    strength: float = 0.8,
 ):
     device = next(transformer.parameters()).device
 
@@ -188,6 +192,32 @@ def generate(
 
     latents = torch.randn(shape, generator=generator, device=device, dtype=torch.float32)
 
+    # Image-to-Image Logic
+    init_step = 0
+    if image is not None:
+        logger.info(f"Image-to-Image mode: strength={strength}")
+        # Preprocess image
+        image = image.convert("RGB")
+        image = image.resize((width, height), resample=PIL.Image.LANCZOS)
+        image_np = np.array(image).astype(np.float32) / 255.0
+        image_np = (image_np - 0.5) * 2.0
+        image_tensor = torch.from_numpy(image_np).permute(2, 0, 1).float().unsqueeze(0).to(device)
+        
+        # Encode image
+        if hasattr(vae, "dtype"):
+            image_tensor = image_tensor.to(vae.dtype)
+        
+        image_latents = vae.encode(image_tensor).latent_dist.sample(generator)
+        image_latents = (image_latents - vae.config.shift_factor) * vae.config.scaling_factor
+        
+        if num_images_per_prompt > 1:
+            image_latents = image_latents.repeat(num_images_per_prompt, 1, 1, 1)
+            
+        # Determine start step
+        init_step = min(int(num_inference_steps * (1 - strength)), num_inference_steps)
+        if init_step < 0: init_step = 0
+
+
     actual_batch_size = batch_size * num_images_per_prompt
     image_seq_len = (latents.shape[2] // 2) * (latents.shape[3] // 2)
 
@@ -206,7 +236,19 @@ def generate(
         device,
         sigmas=None,
         **scheduler_kwargs,
+
     )
+
+    if image is not None and init_step < len(timesteps):
+        timesteps = timesteps[init_step:]
+        # Get start sigma
+        # Note: scheduler.sigmas matches full steps. We need sigma at init_step.
+        # FlowMatchEulerDiscreteScheduler usually computes sigmas in set_timesteps
+        sigma = scheduler.sigmas[init_step].to(device)
+        
+        # Flow Matching interpolation: x_t = sigma * x_1 (noise) + (1 - sigma) * x_0 (data)
+        latents = sigma * latents + (1 - sigma) * image_latents.to(dtype=torch.float32)
+
 
     logger.info(f"Sampling loop start: {num_inference_steps} steps")
 

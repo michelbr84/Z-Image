@@ -5,6 +5,47 @@ const btnText = document.querySelector('.btn-text');
 const btnLoader = document.getElementById('btnLoader');
 const timeTakenEl = document.getElementById('timeTaken');
 
+// Upload Elements
+const imageInput = document.getElementById('imageInput');
+const uploadBtn = document.getElementById('uploadBtn');
+const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+const imagePreview = document.getElementById('imagePreview');
+const clearImageBtn = document.getElementById('clearImageBtn');
+const settingsSection = document.getElementById('settingsSection');
+const strengthSlider = document.getElementById('strengthSlider');
+const strengthValue = document.getElementById('strengthValue');
+
+let uploadedImageBase64 = null;
+
+// Upload Handlers
+uploadBtn.addEventListener('click', () => imageInput.click());
+
+imageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            uploadedImageBase64 = e.target.result;
+            imagePreview.src = uploadedImageBase64;
+            imagePreviewContainer.style.display = 'inline-block';
+            settingsSection.style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+clearImageBtn.addEventListener('click', () => {
+    imageInput.value = '';
+    uploadedImageBase64 = null;
+    imagePreview.src = '';
+    imagePreviewContainer.style.display = 'none';
+    settingsSection.style.display = 'none';
+});
+
+strengthSlider.addEventListener('input', (e) => {
+    strengthValue.textContent = e.target.value;
+});
+
 generateBtn.addEventListener('click', async () => {
     const prompt = promptInput.value.trim();
     if (!prompt) return;
@@ -26,7 +67,9 @@ generateBtn.addEventListener('click', async () => {
                 prompt: prompt,
                 height: 1024,
                 width: 1024,
-                steps: 8
+                steps: 8,
+                image: uploadedImageBase64,
+                strength: parseFloat(strengthSlider.value)
             }),
         });
 

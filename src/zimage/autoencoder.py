@@ -10,7 +10,25 @@ import torch.nn as nn
 
 @dataclass
 class AutoencoderKLOutput:
-    sample: torch.Tensor
+    sample: Optional[torch.Tensor] = None
+    latent_dist: Optional["DiagonalGaussianDistribution"] = None
+
+
+class DiagonalGaussianDistribution:
+    def __init__(self, parameters, deterministic=False):
+        self.parameters = parameters
+        self.mean, self.logvar = torch.chunk(parameters, 2, dim=1)
+        self.logvar = torch.clamp(self.logvar, -30.0, 20.0)
+        self.deterministic = deterministic
+        self.std = torch.exp(0.5 * self.logvar)
+        self.var = torch.exp(self.logvar)
+        if self.deterministic:
+            self.var = self.std = torch.zeros_like(self.mean).to(device=self.parameters.device)
+
+    def sample(self, generator=None):
+        sample = torch.randn(self.mean.shape, generator=generator, device=self.parameters.device, dtype=self.parameters.dtype)
+        x = self.mean + self.std * sample
+        return x
 
 
 class AutoencoderConfig:
@@ -367,3 +385,13 @@ class AutoencoderKL(nn.Module):
             return (dec,)
 
         return AutoencoderKLOutput(sample=dec)
+
+    def encode(self, x: torch.FloatTensor, return_dict: bool = True) -> AutoencoderKLOutput:
+        h = self.encoder(x)
+        moments = self.quant_conv(h) if self.quant_conv is not None else h
+        posterior = DiagonalGaussianDistribution(moments)
+
+        if not return_dict:
+            return (posterior,)
+
+        return AutoencoderKLOutput(latent_dist=posterior)

@@ -11,6 +11,8 @@ from utils import AttentionBackend, ensure_model_weights, load_from_local_dir, s
 from zimage import generate
 import base64
 from io import BytesIO
+from PIL import Image
+from typing import Optional
 
 # Filter warnings
 warnings.filterwarnings("ignore")
@@ -28,6 +30,8 @@ class GenerateRequest(BaseModel):
     steps: int = 8
     guidance_scale: float = 0.0
     seed: int = 42
+    image: Optional[str] = None
+    strength: float = 0.8
 
 @app.on_event("startup")
 async def startup_event():
@@ -70,6 +74,20 @@ async def generate_image(request: GenerateRequest):
     
     try:
         print(f"Generating image for prompt: {request.prompt}")
+        
+        input_image = None
+        if request.image:
+            try:
+                # Remove header if present (e.g. "data:image/png;base64,")
+                img_data = request.image
+                if "," in img_data:
+                    img_data = img_data.split(",")[1]
+                input_image = Image.open(BytesIO(base64.b64decode(img_data)))
+            except Exception as e:
+                print(f"Error decoding image: {e}")
+                # Fallback to text-to-image or raise error? Failing is better
+                raise HTTPException(status_code=400, detail="Invalid image data")
+
         images = generate(
             prompt=request.prompt,
             **model_components,
@@ -78,6 +96,8 @@ async def generate_image(request: GenerateRequest):
             num_inference_steps=request.steps,
             guidance_scale=request.guidance_scale,
             generator=torch.Generator(device).manual_seed(request.seed),
+            image=input_image,
+            strength=request.strength,
         )
         
         # Convert to base64
