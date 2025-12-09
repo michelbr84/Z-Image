@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z-Image Generator</title>
+    <link rel="stylesheet" href="index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="glass-container">
+        <header>
+            <h1>Z-Image <span>Turbo</span></h1>
+            <p>Next-Gen Single-Stream Diffusion</p>
+        </header>
+
+        <main>
+            <div class="input-section">
+                <textarea id="promptInput" placeholder="Describe your imagination... (e.g., A cyberpunk city in rain, neon lights, 8k resolution)"></textarea>
+                <div class="controls">
+                    <button id="generateBtn">
+                        <span class="btn-text">Generate Art</span>
+                        <div class="loader" id="btnLoader"></div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <div class="image-container" id="imageContainer">
+                    <div class="placeholder-text">Artifacts will appear here</div>
+                </div>
+                <div class="start-time" id="timeTaken"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
