@@ -251,5 +251,3 @@ If you find our work useful in your research, please consider citing:
 ## 🤝 We're Hiring!
 
 We're actively looking for **Research Scientists**, **Engineers**, and **Interns** to work on foundational generative models and their applications. Interested candidates please send your resume to: **jingpeng.gp@alibaba-inc.com**
-#   Z - I m a g e  
- 
