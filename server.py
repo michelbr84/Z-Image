@@ -88,9 +88,18 @@ async def generate_image(request: GenerateRequest):
                 # Fallback to text-to-image or raise error? Failing is better
                 raise HTTPException(status_code=400, detail="Invalid image data")
 
-        images = generate(
+        # Run generation in a separate thread to avoid blocking the event loop
+        from fastapi.concurrency import run_in_threadpool
+        
+        print("Starting generation in threadpool...")
+        images = await run_in_threadpool(
+            generate,
+            transformer=model_components["transformer"],
+            vae=model_components["vae"],
+            text_encoder=model_components["text_encoder"],
+            tokenizer=model_components["tokenizer"],
+            scheduler=model_components["scheduler"],
             prompt=request.prompt,
-            **model_components,
             height=request.height,
             width=request.width,
             num_inference_steps=request.steps,
@@ -99,6 +108,7 @@ async def generate_image(request: GenerateRequest):
             image=input_image,
             strength=request.strength,
         )
+        print("Generation completed successfully.")
         
         # Convert to base64
         buffered = BytesIO()
